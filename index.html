@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>初中不等式大挑戰 - 課堂互動遊戲</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Google Fonts Inter & Noto Sans TC -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            900: '#1e3a8a',
+                        },
+                        accent: {
+                            500: '#f59e0b',
+                            600: '#d97706',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Noto Sans TC', 'Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Noto Sans TC', 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #311042 100%);
+            min-height: 100vh;
+            color: #f8fafc;
+            overflow-x: hidden;
+        }
+
+        /* Glassmorphism styling */
+        .glass-card {
+            background: rgba(30, 41, 59, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.125);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+        }
+
+        .glass-btn {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: all 0.2s ease;
+        }
+
+        .glass-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        }
+
+        /* Slot Machine Animation */
+        .slot-number {
+            transition: transform 0.1s ease-in-out;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.5);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 102, 241, 0.8);
+        }
+
+        /* Number line responsiveness */
+        .svg-container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body class="flex flex-col justify-between min-h-screen p-2 sm:p-4 md:p-6">
+
+    <!-- Top Navigation / Controls -->
+    <header class="w-full max-w-6xl mx-auto flex justify-between items-center mb-4 px-2">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg text-white font-black text-xl">
+                <i class="fa-solid font-mono">&le;</i>
+            </div>
+            <div>
+                <h1 class="text-xl sm:text-2xl font-black tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400">
+                    初中不等式大挑戰
+                </h1>
+                <p class="text-xs text-slate-400 hidden sm:block">複習重點：圖解、範圍驗證、解不等式與文字題</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button onclick="toggleSound()" id="sound-btn" class="glass-btn p-2.5 rounded-xl text-slate-300 hover:text-white" title="切換音效">
+                <i class="fa-solid fa-volume-high text-lg"></i>
+            </button>
+            <button onclick="toggleFullscreen()" class="glass-btn p-2.5 rounded-xl text-slate-300 hover:text-white" title="全螢幕切換">
+                <i class="fa-solid fa-expand text-lg"></i>
+            </button>
+            <button onclick="showLeaderboardView()" class="glass-btn px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold text-indigo-300 hover:text-white flex items-center gap-2">
+                <i class="fa-solid fa-trophy text-amber-400"></i>
+                <span>排行榜</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="w-full max-w-4xl mx-auto flex-1 flex flex-col justify-center items-center relative z-10 my-auto">
+        
+        <!-- STEP 1: Class Setup Screen -->
+        <section id="screen-setup" class="w-full glass-card rounded-3xl p-6 sm:p-10 text-center max-w-xl mx-auto transition-all">
+            <div class="w-20 h-20 bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-indigo-500/30">
+                <i class="fa-solid fa-users text-4xl text-indigo-400"></i>
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-extrabold mb-3">課堂抽籤設定</h2>
+            <p class="text-slate-300 text-sm mb-8 leading-relaxed">請輸入全班總人數。系統將自動生成學號（1號至總人數），並確保每位同學不會重複被抽中。</p>
+            
+            <div class="mb-8 max-w-xs mx-auto">
+                <label class="block text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider">全班總人數 (1 - 50)</label>
+                <div class="flex items-center justify-center gap-3">
+                    <button onclick="adjustStudents(-1)" class="w-12 h-12 rounded-xl glass-btn text-2xl font-bold text-slate-300 hover:text-white flex items-center justify-center">-</button>
+                    <input type="number" id="total-students-input" value="30" min="1" max="50" class="w-24 h-12 rounded-xl bg-slate-900/80 border border-indigo-500/40 text-center text-2xl font-extrabold text-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <button onclick="adjustStudents(1)" class="w-12 h-12 rounded-xl glass-btn text-2xl font-bold text-slate-300 hover:text-white flex items-center justify-center">+</button>
+                </div>
+            </div>
+
+            <button onclick="confirmSetup()" class="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-lg shadow-lg shadow-indigo-500/25 transition transform active:scale-95 flex items-center justify-center gap-2">
+                <span>進入抽籤環節</span>
+                <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </section>
+
+        <!-- STEP 2: Student Draw / Slot Machine Screen -->
+        <section id="screen-draw" class="w-full glass-card rounded-3xl p-6 sm:p-10 text-center max-w-xl mx-auto hidden transition-all">
+            <div class="flex justify-between items-center mb-6 text-xs sm:text-sm text-slate-400">
+                <span>班級總人數: <strong id="disp-total-count" class="text-slate-200">30</strong> 人</span>
+                <span>剩餘未挑戰: <strong id="disp-remain-count" class="text-indigo-400 font-bold">30</strong> 人</span>
+            </div>
+
+            <h2 class="text-xl sm:text-2xl font-bold text-slate-200 mb-6">幸運輪盤抽籤</h2>
+
+            <!-- Slot Box -->
+            <div class="w-48 h-48 mx-auto my-6 bg-slate-950/90 rounded-3xl border-2 border-indigo-500/40 flex flex-col items-center justify-center shadow-inner relative overflow-hidden group">
+                <div class="absolute inset-0 bg-gradient-to-b from-indigo-500/10 via-transparent to-indigo-500/10 pointer-events-none"></div>
+                <span class="text-xs text-indigo-400 uppercase tracking-widest font-semibold mb-1">學 號</span>
+                <div id="slot-display" class="text-6xl sm:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-indigo-200 to-blue-400 tracking-tighter">
+                    ?
+                </div>
+                <span id="slot-subtitle" class="text-xs text-slate-400 mt-2">準備抽取</span>
+            </div>
+
+            <div class="space-y-3 mt-8">
+                <button id="draw-btn" onclick="startDraw()" class="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 text-white font-bold text-lg shadow-lg shadow-amber-500/20 transition transform active:scale-95 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-dice text-xl"></i>
+                    <span>抽取學號</span>
+                </button>
+                <button id="start-game-btn" onclick="startGameForCurrentStudent()" class="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-lg shadow-lg shadow-emerald-500/20 transition transform active:scale-95 hidden flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-play text-xl"></i>
+                    <span>開始挑戰 (5題)</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- STEP 3: Quiz Screen -->
+        <section id="screen-quiz" class="w-full glass-card rounded-3xl p-5 sm:p-8 hidden transition-all">
+            <!-- Game Header Stats -->
+            <div class="flex flex-wrap justify-between items-center gap-2 pb-4 mb-6 border-b border-slate-700/60">
+                <div class="flex items-center gap-3">
+                    <div class="px-3 py-1.5 rounded-xl bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 font-bold text-sm flex items-center gap-1.5">
+                        <i class="fa-solid fa-user-graduate"></i>
+                        <span>學號 <strong id="quiz-student-id" class="text-white text-base">--</strong></span>
+                    </div>
+                    <div class="px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 font-semibold text-xs sm:text-sm">
+                        題型: <span id="quiz-type-label" class="text-amber-300">簡單不等式圖解</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <div class="text-right">
+                        <span class="text-[10px] text-slate-400 uppercase tracking-wider block">當前進度</span>
+                        <span class="text-sm font-extrabold text-indigo-400"><span id="quiz-step">1</span> / 5 題</span>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-[10px] text-slate-400 uppercase tracking-wider block">耗時</span>
+                        <span id="quiz-timer" class="text-sm font-mono font-bold text-emerald-400">00:00</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question Card -->
+            <div class="mb-6">
+                <div class="flex items-start gap-2 mb-3">
+                    <span class="bg-blue-600/30 text-blue-300 border border-blue-500/30 px-2.5 py-0.5 rounded-lg text-xs font-bold mt-1 shrink-0" id="question-badge">
+                        Q1
+                    </span>
+                    <h3 id="question-text" class="text-base sm:text-xl font-bold leading-relaxed text-slate-100">
+                        載入題目中...
+                    </h3>
+                </div>
+
+                <!-- SVG / Graphic Container (Shown for Type 1 or Diagram questions) -->
+                <div id="svg-graphic-box" class="my-4 p-4 rounded-2xl bg-slate-950/60 border border-slate-800 flex justify-center items-center min-h-[120px]">
+                    <!-- Dynamic SVG injected here -->
+                </div>
+            </div>
+
+            <!-- Answer Options (4 Choices) -->
+            <div id="options-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+                <!-- Buttons injected via JavaScript -->
+            </div>
+
+            <!-- Feedback & Explanation Box -->
+            <div id="feedback-box" class="hidden p-4 rounded-2xl mb-6 text-sm transition-all border">
+                <div id="feedback-title" class="font-extrabold text-base flex items-center gap-2 mb-1"></div>
+                <div id="feedback-explain" class="text-slate-300 leading-relaxed text-xs sm:text-sm"></div>
+            </div>
+
+            <!-- Action Button -->
+            <div class="flex justify-end">
+                <button id="next-btn" onclick="nextQuestion()" class="hidden px-8 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold shadow-lg shadow-indigo-500/20 transition transform active:scale-95 flex items-center gap-2">
+                    <span id="next-btn-text">下一題</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- STEP 4: Single Player Result Modal/Screen -->
+        <section id="screen-result" class="w-full glass-card rounded-3xl p-6 sm:p-10 text-center max-w-xl mx-auto hidden transition-all">
+            <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-amber-400 to-amber-600 flex items-center justify-center mx-auto mb-4 shadow-xl shadow-amber-500/20">
+                <i class="fa-solid fa-trophy text-4xl text-slate-950"></i>
+            </div>
+            
+            <h2 class="text-2xl sm:text-3xl font-black mb-1">挑戰完成！</h2>
+            <p class="text-slate-400 text-sm mb-6">學號 <strong id="res-student-id" class="text-indigo-400 font-bold text-base">--</strong> 號的答題成果</p>
+
+            <!-- Stats Box -->
+            <div class="grid grid-cols-3 gap-3 my-6">
+                <div class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800">
+                    <span class="text-[10px] text-slate-400 uppercase tracking-wider block mb-1">總得分</span>
+                    <span id="res-score" class="text-2xl sm:text-3xl font-black text-amber-400">100</span>
+                    <span class="text-xs text-slate-500">分</span>
+                </div>
+                <div class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800">
+                    <span class="text-[10px] text-slate-400 uppercase tracking-wider block mb-1">正確率</span>
+                    <span id="res-accuracy" class="text-2xl sm:text-3xl font-black text-emerald-400">5/5</span>
+                </div>
+                <div class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800">
+                    <span class="text-[10px] text-slate-400 uppercase tracking-wider block mb-1">總耗時</span>
+                    <span id="res-time" class="text-xl sm:text-2xl font-mono font-bold text-indigo-300">01:20</span>
+                </div>
+            </div>
+
+            <div class="p-4 rounded-2xl bg-indigo-950/40 border border-indigo-500/20 text-slate-300 text-xs sm:text-sm mb-8 text-left">
+                <p id="res-feedback-msg" class="leading-relaxed"></p>
+            </div>
+
+            <!-- Prompt Next Player -->
+            <div class="space-y-3">
+                <button onclick="continueNextPlayer()" class="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-lg shadow-lg shadow-indigo-500/25 transition transform active:scale-95 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-user-plus"></i>
+                    <span>請下一個玩家（學號）開始遊戲</span>
+                </button>
+                <button onclick="finishAndShowLeaderboard()" class="w-full py-3.5 rounded-2xl glass-btn text-slate-300 hover:text-white font-semibold text-sm transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-list-ol"></i>
+                    <span>結束遊戲並查看總排行榜</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- STEP 5: Leaderboard View -->
+        <section id="screen-leaderboard" class="w-full glass-card rounded-3xl p-5 sm:p-8 hidden transition-all">
+            <div class="flex justify-between items-center pb-4 mb-6 border-b border-slate-700/60">
+                <div>
+                    <h2 class="text-xl sm:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-indigo-300">
+                        <i class="fa-solid fa-trophy text-amber-400 mr-2"></i>全班總排行榜
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-0.5">排名依據：總得分 (高者優先) &gt; 耗時 (短者優先)</p>
+                </div>
+                <button onclick="backToDrawOrSetup()" class="px-4 py-2 rounded-xl glass-btn text-xs sm:text-sm font-semibold text-slate-300 hover:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    <span>返回遊戲</span>
+                </button>
+            </div>
+
+            <!-- Leaderboard Table Container -->
+            <div class="overflow-x-auto max-h-[380px] overflow-y-auto mb-6 pr-1">
+                <table class="w-full text-left text-sm">
+                    <thead class="text-xs uppercase bg-slate-900/80 text-slate-400 sticky top-0 border-b border-slate-800">
+                        <tr>
+                            <th scope="col" class="py-3 px-4 rounded-l-xl">名次</th>
+                            <th scope="col" class="py-3 px-4">學號</th>
+                            <th scope="col" class="py-3 px-4">得分</th>
+                            <th scope="col" class="py-3 px-4">答對題數</th>
+                            <th scope="col" class="py-3 px-4 rounded-r-xl">總耗時</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboard-tbody" class="divide-y divide-slate-800/60">
+                        <!-- Dynamic Leaderboard Rows -->
+                    </tbody>
+                </table>
+                <div id="leaderboard-empty" class="hidden py-12 text-center text-slate-500 text-sm">
+                    目前尚未有同學完成挑戰！
+                </div>
+            </div>
+
+            <!-- Footer Actions -->
+            <div class="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-800">
+                <button onclick="exportCSV()" class="px-4 py-2.5 rounded-xl bg-emerald-600/20 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-600 hover:text-white text-xs sm:text-sm font-bold transition flex items-center gap-2">
+                    <i class="fa-solid fa-file-excel"></i>
+                    <span>匯出成績 (CSV)</span>
+                </button>
+                <button onclick="resetAllData()" class="px-4 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white text-xs sm:text-sm font-bold transition flex items-center gap-2">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span>重新重置全班數據</span>
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full max-w-6xl mx-auto text-center py-3 text-xs text-slate-500">
+        初中數學：不等式重溫 (Inequalities Review) &bull; 設計專用於 Canva / 網頁課堂互動
+    </footer>
+
+    <!-- Audio Effects (Synthesized using Web Audio API to prevent broken external links) -->
+    <script>
+        // Web Audio API Sound Synthesizer
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+        let soundEnabled = true;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new AudioContext();
+            }
+        }
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            try {
+                initAudio();
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                const now = audioCtx.currentTime;
+
+                if (type === 'tick') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(440, now);
+                    gain.gain.setValueAtTime(0.05, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+                } else if (type === 'correct') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+                    osc.frequency.setValueAtTime(783.99, now + 0.2); // G5
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+                    osc.start(now);
+                    osc.stop(now + 0.4);
+                } else if (type === 'wrong') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.setValueAtTime(180, now + 0.15);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+                    osc.start(now);
+                    osc.stop(now + 0.35);
+                } else if (type === 'win') {
+                    // Win chime
+                    [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+                        const o = audioCtx.createOscillator();
+                        const g = audioCtx.createGain();
+                        o.connect(g);
+                        g.connect(audioCtx.destination);
+                        o.frequency.setValueAtTime(freq, now + idx * 0.1);
+                        g.gain.setValueAtTime(0.1, now + idx * 0.1);
+                        g.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.1 + 0.3);
+                        o.start(now + idx * 0.1);
+                        o.stop(now + idx * 0.1 + 0.3);
+                    });
+                }
+            } catch (e) {
+                console.log('Audio playback error:', e);
+            }
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const btn = document.getElementById('sound-btn');
+            btn.innerHTML = soundEnabled 
+                ? '<i class="fa-solid fa-volume-high text-lg"></i>' 
+                : '<i class="fa-solid fa-volume-xmark text-lg text-red-400"></i>';
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log(`Error attempting to enable fullscreen: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+    </script>
+
+    <!-- Game Logic & Question Generator Engine -->
+    <script>
+        // Game State
+        let totalStudents = 30;
+        let availableStudents = [];
+        let currentStudent = null;
+        let leaderboard = []; // Stores { studentId, score, correctCount, timeInSec, timestamp }
+        
+        let currentQuestions = [];
+        let currentStep = 0;
+        let currentScore = 0;
+        let currentCorrectCount = 0;
+        let timerInterval = null;
+        let timerSeconds = 0;
+        let selectedOptionIndex = null;
+
+        // Initialize Local Storage data if available
+        window.onload = function() {
+            loadSavedData();
+        };
+
+        function loadSavedData() {
+            const savedLeaderboard = localStorage.getItem('inequality_game_leaderboard');
+            if (savedLeaderboard) {
+                try {
+                    leaderboard = JSON.parse(savedLeaderboard);
+                } catch(e) { leaderboard = []; }
+            }
+            const savedTotal = localStorage.getItem('inequality_game_total');
+            if (savedTotal) {
+                totalStudents = parseInt(savedTotal) || 30;
+                document.getElementById('total-students-input').value = totalStudents;
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('inequality_game_leaderboard', JSON.stringify(leaderboard));
+            localStorage.setItem('inequality_game_total', totalStudents.toString());
+        }
+
+        // STEP 1 Logic: Class Setup
+        function adjustStudents(delta) {
+            let val = parseInt(document.getElementById('total-students-input').value) || 30;
+            val = Math.max(1, Math.min(50, val + delta));
+            document.getElementById('total-students-input').value = val;
+        }
+
+        function confirmSetup() {
+            const val = parseInt(document.getElementById('total-students-input').value);
+            if (isNaN(val) || val < 1) return;
+            totalStudents = val;
+            saveData();
+
+            // Re-populate available students list excluding those already in leaderboard
+            const completedIds = leaderboard.map(item => item.studentId);
+            availableStudents = [];
+            for (let i = 1; i <= totalStudents; i++) {
+                if (!completedIds.includes(i)) {
+                    availableStudents.push(i);
+                }
+            }
+
+            switchScreen('screen-draw');
+            updateDrawScreenUI();
+        }
+
+        function updateDrawScreenUI() {
+            document.getElementById('disp-total-count').innerText = totalStudents;
+            document.getElementById('disp-remain-count').innerText = availableStudents.length;
+
+            if (availableStudents.length === 0) {
+                document.getElementById('slot-display').innerText = '全完';
+                document.getElementById('slot-subtitle').innerText = '所有學號均已完成';
+                document.getElementById('draw-btn').classList.add('hidden');
+                document.getElementById('start-game-btn').classList.add('hidden');
+            } else {
+                document.getElementById('draw-btn').classList.remove('hidden');
+                document.getElementById('start-game-btn').classList.add('hidden');
+                document.getElementById('slot-display').innerText = '?';
+                document.getElementById('slot-subtitle').innerText = '點擊按鈕抽取';
+            }
+        }
+
+        // STEP 2 Logic: Drawing Student
+        function startDraw() {
+            if (availableStudents.length === 0) return;
+
+            const drawBtn = document.getElementById('draw-btn');
+            drawBtn.disabled = true;
+            drawBtn.classList.add('opacity-50');
+
+            let counter = 0;
+            const maxRolls = 20;
+            const interval = setInterval(() => {
+                const randIndex = Math.floor(Math.random() * availableStudents.length);
+                const tempId = availableStudents[randIndex];
+                document.getElementById('slot-display').innerText = tempId;
+                playSound('tick');
+                counter++;
+
+                if (counter >= maxRolls) {
+                    clearInterval(interval);
+                    // Final Pick
+                    const finalIndex = Math.floor(Math.random() * availableStudents.length);
+                    currentStudent = availableStudents[finalIndex];
+                    document.getElementById('slot-display').innerText = currentStudent;
+                    document.getElementById('slot-subtitle').innerText = '幸運抽中學號';
+                    playSound('win');
+
+                    drawBtn.classList.add('hidden');
+                    drawBtn.disabled = false;
+                    drawBtn.classList.remove('opacity-50');
+
+                    document.getElementById('start-game-btn').classList.remove('hidden');
+                }
+            }, 80);
+        }
+
+        function startGameForCurrentStudent() {
+            if (!currentStudent) return;
+
+            // Generate 5 questions according to syllabus
+            currentQuestions = [
+                generateType1Question(), // Diagram
+                generateType2Question(), // Range / Value
+                generateType3Question(1), // Solving Easy/Normal
+                generateType3Question(2), // Solving Harder / Flip Sign
+                generateType4Question()  // Word problem
+            ];
+
+            currentStep = 0;
+            currentScore = 0;
+            currentCorrectCount = 0;
+            timerSeconds = 0;
+
+            document.getElementById('quiz-student-id').innerText = currentStudent;
+            
+            startTimer();
+            switchScreen('screen-quiz');
+            loadQuestion(currentStep);
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timerSeconds++;
+                const mins = String(Math.floor(timerSeconds / 60)).padStart(2, '0');
+                const secs = String(timerSeconds % 60).padStart(2, '0');
+                document.getElementById('quiz-timer').innerText = `${mins}:${secs}`;
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+        }
+
+        // --- QUESTION GENERATORS --- //
+
+        // Type 1: SVG Number Line Diagrams
+        function generateType1Question() {
+            // Random point between -5 and 5
+            const val = Math.floor(Math.random() * 9) - 4; // -4 to 4
+            const isGreater = Math.random() > 0.5;
+            const isInclusive = Math.random() > 0.5;
+
+            let operator = '';
+            if (isGreater && isInclusive) operator = '≥';
+            else if (isGreater && !isInclusive) operator = '>';
+            else if (!isGreater && isInclusive) operator = '≤';
+            else operator = '<';
+
+            const correctExpr = `x ${operator} ${val}`;
+
+            // Create distractors
+            const distractors = new Set();
+            distractors.add(`x ${isGreater ? (isInclusive ? '>' : '≥') : (isInclusive ? '<' : '≤')} ${val}`); // Opp inclusive
+            distractors.add(`x ${!isGreater ? (isInclusive ? '≥' : '>') : (isInclusive ? '≤' : '<')} ${val}`); // Opp direction
+            distractors.add(`x ${operator} ${-val === val ? val + 2 : -val}`); // Opp sign
+
+            const options = Array.from(distractors).slice(0, 3);
+            options.push(correctExpr);
+            shuffleArray(options);
+
+            const correctIdx = options.indexOf(correctExpr);
+
+            return {
+                typeLabel: '簡單不等式圖解',
+                badge: '圖解題',
+                text: '請觀察下方數線，選出其所代表的不等式：',
+                svgData: { val, isGreater, isInclusive },
+                options: options,
+                correctIndex: correctIdx,
+                explanation: `數線上，圓點在 ${val} 處。` + 
+                             (isInclusive ? '實心圓點表示包含該數（有等號 ≥ 或 ≤）。' : '空心圓點表示不包含該數（無等號 > 或 <）。') + 
+                             (isGreater ? '箭頭指向右方表示大於方向。' : '箭頭指向左方表示小於方向。') + 
+                             `因此正確答案為 $x ${operator} ${val}$。`
+            };
+        }
+
+        // Type 2: Range / Solution Verification
+        function generateType2Question() {
+            const types = [
+                {
+                    getQ: () => {
+                        const val = Math.floor(Math.random() * 6) + 2; // 2 to 7
+                        const isG = Math.random() > 0.5;
+                        const expr = `x ${isG ? '>' : '<'} ${val}`;
+                        const validVal = isG ? val + 3 : val - 3;
+                        const invalidVal1 = val;
+                        const invalidVal2 = isG ? val - 2 : val + 2;
+                        const invalidVal3 = isG ? val - 5 : val + 5;
+
+                        const opts = [
+                            { text: `x = ${validVal}`, correct: true },
+                            { text: `x = ${invalidVal1}`, correct: false },
+                            { text: `x = ${invalidVal2}`, correct: false },
+                            { text: `x = ${invalidVal3}`, correct: false }
+                        ];
+                        shuffleArray(opts);
+                        return {
+                            text: `已知不等式為 $${expr}$，下列哪一個數值是該不等式的其中一個解？`,
+                            options: opts.map(o => o.text),
+                            correctIdx: opts.findIndex(o => o.correct),
+                            explain: `將選項代入 $${expr}$：只有 $x = ${validVal}$ 滿足條件（$${validVal} ${isG ? '>' : '<'} ${val}$ 成立）。注意：$x = ${val}$ 不滿足無等號的不等式！`
+                        };
+                    }
+                },
+                {
+                    getQ: () => {
+                        const k = Math.floor(Math.random() * 5) + 1;
+                        const opts = [
+                            { text: `x > ${k} 的最小整數解為 ${k+1}`, correct: true },
+                            { text: `x ≥ ${k} 的最小整數解為 ${k+1}`, correct: false },
+                            { text: `x < ${k} 的最大整數解為 ${k}`, correct: false },
+                            { text: `x ≤ ${k} 的最大整數解為 ${k-1}`, correct: false }
+                        ];
+                        shuffleArray(opts);
+                        return {
+                            text: `關於不等式與整數解的敘述，下列哪一個是【正確】的？`,
+                            options: opts.map(o => o.text),
+                            correctIdx: opts.findIndex(o => o.correct),
+                            explain: `對於 $x > ${k}$，不包含 ${k}，故比 ${k} 大的最小整數是 ${k+1}。`
+                        };
+                    }
+                }
+            ];
+
+            const qObj = types[Math.floor(Math.random() * types.length)].getQ();
+            return {
+                typeLabel: '找不等式範圍',
+                badge: '範圍題',
+                text: qObj.text,
+                svgData: null,
+                options: qObj.options,
+                correctIndex: qObj.correctIdx,
+                explanation: qObj.explain
+            };
+        }
+
+        // Type 3: Solving Inequalities (Level 1 & Level 2 with negative division)
+        function generateType3Question(level) {
+            if (level === 1) {
+                // Easy: ax + b <= c (a > 0)
+                const a = Math.floor(Math.random() * 4) + 2; // 2 to 5
+                const xVal = Math.floor(Math.random() * 8) - 3; // -3 to 4
+                const b = Math.floor(Math.random() * 10) - 5;
+                const c = a * xVal + b;
+                const isG = Math.random() > 0.5;
+                const op = isG ? '≥' : '≤';
+
+                const expr = `${a}x ${b >= 0 ? '+ ' + b : '- ' + Math.abs(b)} ${op} ${c}`;
+                const correctAns = `x ${op} ${xVal}`;
+
+                const wrongOp = isG ? '≤' : '≥';
+                const opts = [
+                    correctAns,
+                    `x ${op} ${xVal + 2}`,
+                    `x ${wrongOp} ${xVal}`,
+                    `x ${op} ${xVal - 2}`
+                ];
+                shuffleArray(opts);
+
+                return {
+                    typeLabel: '解不等式 (基礎)',
+                    badge: '計算題',
+                    text: `解不等式： $${expr}$`,
+                    svgData: null,
+                    options: opts,
+                    correctIndex: opts.indexOf(correctAns),
+                    explanation: `解法步驟：<br>1. 移項：$${a}x ${op} ${c} ${b >= 0 ? '- ' + b : '+ ' + Math.abs(b)}$ &rArr; $${a}x ${op} ${a * xVal}$<br>2. 兩邊同除以正數 $${a}$（符號不變）：$${correctAns}$。`
+                };
+            } else {
+                // Harder: -ax + b > c (a > 0, requires flipping sign!)
+                const a = Math.floor(Math.random() * 3) + 2; // 2 to 4
+                const xVal = Math.floor(Math.random() * 7) - 3;
+                const b = Math.floor(Math.random() * 8) + 1;
+                const c = -a * xVal + b;
+                const isG = Math.random() > 0.5;
+                const origOp = isG ? '>' : '<';
+                const flippedOp = isG ? '<' : '>';
+
+                const expr = `-${a}x + ${b} ${origOp} ${c}`;
+                const correctAns = `x ${flippedOp} ${xVal}`;
+                const unFlippedAns = `x ${origOp} ${xVal}`; // common mistake
+
+                const opts = [
+                    correctAns,
+                    unFlippedAns,
+                    `x ${flippedOp} ${-xVal}`,
+                    `x ${origOp} ${-xVal}`
+                ];
+                shuffleArray(opts);
+
+                return {
+                    typeLabel: '解不等式 (負數變號)',
+                    badge: '核心題',
+                    text: `解不等式： $${expr}$`,
+                    svgData: null,
+                    options: opts,
+                    correctIndex: opts.indexOf(correctAns),
+                    explanation: `<strong class="text-amber-300">重點注意：</strong><br>1. 移項得：$-${a}x ${origOp} ${c - b}$ &rArr; $-${a}x ${origOp} ${-a * xVal}$<br>2. 兩邊同時除以負數 $-${a}$ 時，<strong class="text-red-400">不等號必須顛倒方向</strong>！<br>故得到 $${correctAns}$。`
+                };
+            }
+        }
+
+        // Type 4: Word Problems
+        function generateType4Question() {
+            const wordProblems = [
+                {
+                    getText: () => {
+                        const maxVal = Math.floor(Math.random() * 15) + 15; // 15 to 30
+                        return {
+                            text: `小明口袋裡有 $x$ 元，買了一份 $12$ 元的早餐後，剩餘的錢【不超過】 $${maxVal}$ 元。請依題意列出不等式：`,
+                            options: [
+                                `x - 12 ≤ ${maxVal}`,
+                                `x - 12 < ${maxVal}`,
+                                `x - 12 ≥ ${maxVal}`,
+                                `x + 12 ≤ ${maxVal}`
+                            ],
+                            correctIdx: 0,
+                            explain: `關鍵字「不超過」代表「小於或等於（&le;）」。剩餘的錢為 $(x - 12)$，故不等式為 $x - 12 \\le ${maxVal}$。`
+                        };
+                    }
+                },
+                {
+                    getText: () => {
+                        const price = 15;
+                        const minRemain = Math.floor(Math.random() * 20) + 10;
+                        return {
+                            text: `小華帶 $x$ 元去文具店，買了 $3$ 支每支 $${price}$ 元的鋼珠筆後，剩下的錢【不少於】 $${minRemain}$ 元。下列何者正確？`,
+                            options: [
+                                `x - ${3 * price} ≥ ${minRemain}`,
+                                `x - ${3 * price} > ${minRemain}`,
+                                `x - ${price} ≤ ${minRemain}`,
+                                `x + ${3 * price} ≥ ${minRemain}`
+                            ],
+                            correctIdx: 0,
+                            explain: `3 支筆的總價為 $3 \\times ${price} = ${3 * price}$ 元。關鍵字「不少於」代表「大於或等於（&ge;）」。故不等式為 $x - ${3 * price} \\ge ${minRemain}$。`
+                        };
+                    }
+                },
+                {
+                    getText: () => {
+                        const limit = 50;
+                        return {
+                            text: `某電梯限重，已知 $x$ 與 $y$ 的和【最多為】 $${limit}$ 公斤。下列不等式何者正確？`,
+                            options: [
+                                `x + y ≤ ${limit}`,
+                                `x + y < ${limit}`,
+                                `x + y ≥ ${limit}`,
+                                `x - y ≤ ${limit}`
+                            ],
+                            correctIdx: 0,
+                            explain: `「最多為」意味著「不可超過」，即包含該數值且小於它，表示符號為「&le;」。故列式為 $x + y \\le ${limit}$。`
+                        };
+                    }
+                }
+            ];
+
+            const qObj = wordProblems[Math.floor(Math.random() * wordProblems.length)].getText();
+            return {
+                typeLabel: '不等式文字題',
+                badge: '應用題',
+                text: qObj.text,
+                svgData: null,
+                options: qObj.options,
+                correctIndex: qObj.correctIdx,
+                explanation: qObj.explain
+            };
+        }
+
+        // --- RENDER SVG NUMBER LINE --- //
+        function renderNumberLineSVG(val, isGreater, isInclusive) {
+            // Draw a smooth SVG number line centered around 'val'
+            const minNum = val - 4;
+            const maxNum = val + 4;
+            
+            const svgWidth = 500;
+            const svgHeight = 80;
+            const startX = 40;
+            const endX = 460;
+            const lineY = 40;
+            
+            const totalSteps = maxNum - minNum;
+            const stepPx = (endX - startX) / totalSteps;
+
+            const targetX = startX + (val - minNum) * stepPx;
+
+            let ticksSVG = '';
+            for (let n = minNum; n <= maxNum; n++) {
+                const x = startX + (n - minNum) * stepPx;
+                const isTarget = (n === val);
+                ticksSVG += `
+                    <line x1="${x}" y1="${lineY - 6}" x2="${x}" y2="${lineY + 6}" stroke="${isTarget ? '#fbbf24' : '#64748b'}" stroke-width="${isTarget ? '2.5' : '1.5'}" />
+                    <text x="${x}" y="${lineY + 24}" fill="${isTarget ? '#fbbf24' : '#94a3b8'}" font-size="13" font-weight="${isTarget ? 'bold' : 'normal'}" text-anchor="middle">${n}</text>
+                `;
+            }
+
+            // Arrow direction
+            const arrowX = isGreater ? 480 : 20;
+            const arrowPath = isGreater 
+                ? `M ${targetX} ${lineY - 12} L 472 ${lineY - 12} L 472 ${lineY - 16} L 485 ${lineY - 12} L 472 ${lineY - 8} L 472 ${lineY - 12}`
+                : `M ${targetX} ${lineY - 12} L 28 ${lineY - 12} L 28 ${lineY - 16} L 15 ${lineY - 12} L 28 ${lineY - 8} L 28 ${lineY - 12}`;
+
+            const rayLine = `<path d="${arrowPath}" fill="#38bdf8" stroke="#0284c7" stroke-width="2" />`;
+
+            // Dot
+            const dotFill = isInclusive ? '#38bdf8' : '#0f172a';
+            const dotStroke = '#38bdf8';
+            const dotSVG = `<circle cx="${targetX}" cy="${lineY - 12}" r="6" fill="${dotFill}" stroke="${dotStroke}" stroke-width="3" />`;
+
+            return `
+                <svg viewBox="0 0 ${svgWidth} ${svgHeight}" class="w-full h-auto max-w-lg">
+                    <!-- Main Axis Line -->
+                    <line x1="20" y1="${lineY}" x2="480" y2="${lineY}" stroke="#94a3b8" stroke-width="2" />
+                    <!-- Axis Arrows -->
+                    <polygon points="15,${lineY} 22,${lineY-4} 22,${lineY+4}" fill="#94a3b8"/>
+                    <polygon points="485,${lineY} 478,${lineY-4} 478,${lineY+4}" fill="#94a3b8"/>
+                    
+                    <!-- Ticks & Numbers -->
+                    ${ticksSVG}
+
+                    <!-- Inequality Ray & Circle -->
+                    ${rayLine}
+                    ${dotSVG}
+                </svg>
+            `;
+        }
+
+        // --- QUESTION DISPLAY & INTERACTION --- //
+        function loadQuestion(stepIndex) {
+            const q = currentQuestions[stepIndex];
+            selectedOptionIndex = null;
+
+            document.getElementById('quiz-step').innerText = stepIndex + 1;
+            document.getElementById('quiz-type-label').innerText = q.typeLabel;
+            document.getElementById('question-badge').innerText = q.badge;
+            document.getElementById('question-text').innerHTML = formatMathText(q.text);
+
+            // SVG Container
+            const svgBox = document.getElementById('svg-graphic-box');
+            if (q.svgData) {
+                svgBox.classList.remove('hidden');
+                svgBox.innerHTML = renderNumberLineSVG(q.svgData.val, q.svgData.isGreater, q.svgData.isInclusive);
+            } else {
+                svgBox.classList.add('hidden');
+            }
+
+            // Options
+            const grid = document.getElementById('options-grid');
+            grid.innerHTML = '';
+            
+            const labels = ['A', 'B', 'C', 'D'];
+            q.options.forEach((optText, idx) => {
+                const btn = document.createElement('button');
+                btn.className = `option-btn w-full p-4 rounded-2xl glass-btn text-left flex items-center justify-between gap-3 text-slate-200 hover:text-white font-medium text-sm sm:text-base border border-slate-700/60 transition`;
+                btn.onclick = () => selectOption(idx);
+                btn.id = `opt-btn-${idx}`;
+
+                btn.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="w-8 h-8 rounded-xl bg-slate-800 text-indigo-400 border border-slate-700 flex items-center justify-center font-bold text-xs shrink-0">${labels[idx]}</span>
+                        <span>${formatMathText(optText)}</span>
+                    </div>
+                    <i class="fa-regular fa-circle text-slate-500 opt-icon"></i>
+                `;
+                grid.appendChild(btn);
+            });
+
+            // Reset Feedback Box & Next Button
+            const fbBox = document.getElementById('feedback-box');
+            fbBox.className = 'hidden p-4 rounded-2xl mb-6 text-sm transition-all border';
+            document.getElementById('next-btn').classList.add('hidden');
+        }
+
+        function formatMathText(str) {
+            // Converts simple LaTeX math syntax $...$ into styled HTML
+            return str.replace(/\$(.*?)\$/g, '<span class="font-mono text-amber-300 font-semibold px-1">$1</span>');
+        }
+
+        function selectOption(index) {
+            if (selectedOptionIndex !== null) return; // Prevent changing after answer
+            selectedOptionIndex = index;
+
+            const q = currentQuestions[currentStep];
+            const isCorrect = (index === q.correctIndex);
+
+            // Play Sound & Score
+            if (isCorrect) {
+                playSound('correct');
+                currentScore += 20;
+                currentCorrectCount += 1;
+                confetti({ particleCount: 40, spread: 60, origin: { y: 0.7 } });
+            } else {
+                playSound('wrong');
+            }
+
+            // Style Option Buttons
+            q.options.forEach((_, idx) => {
+                const btn = document.getElementById(`opt-btn-${idx}`);
+                const icon = btn.querySelector('.opt-icon');
+
+                if (idx === q.correctIndex) {
+                    btn.className = 'w-full p-4 rounded-2xl bg-emerald-500/20 border-2 border-emerald-500 text-emerald-200 font-bold text-sm sm:text-base flex items-center justify-between gap-3';
+                    icon.className = 'fa-solid fa-circle-check text-emerald-400 text-lg';
+                } else if (idx === index && !isCorrect) {
+                    btn.className = 'w-full p-4 rounded-2xl bg-red-500/20 border-2 border-red-500 text-red-200 font-semibold text-sm sm:text-base flex items-center justify-between gap-3';
+                    icon.className = 'fa-solid fa-circle-xmark text-red-400 text-lg';
+                } else {
+                    btn.className = 'w-full p-4 rounded-2xl bg-slate-900/40 border border-slate-800 text-slate-500 opacity-60 text-sm sm:text-base flex items-center justify-between gap-3';
+                }
+            });
+
+            // Show Feedback
+            const fbBox = document.getElementById('feedback-box');
+            const fbTitle = document.getElementById('feedback-title');
+            const fbExplain = document.getElementById('feedback-explain');
+
+            fbBox.classList.remove('hidden');
+            if (isCorrect) {
+                fbBox.classList.add('bg-emerald-950/40', 'border-emerald-500/30', 'text-emerald-300');
+                fbTitle.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-400"></i> 回答正確！ (+20分)';
+            } else {
+                fbBox.classList.add('bg-red-950/40', 'border-red-500/30', 'text-red-300');
+                fbTitle.innerHTML = '<i class="fa-solid fa-circle-xmark text-red-400"></i> 回答錯誤！';
+            }
+            fbExplain.innerHTML = formatMathText(q.explanation);
+
+            // Show Next Button
+            const nextBtn = document.getElementById('next-btn');
+            const nextBtnText = document.getElementById('next-btn-text');
+            if (currentStep < currentQuestions.length - 1) {
+                nextBtnText.innerText = '下一題';
+            } else {
+                nextBtnText.innerText = '查看總結成績';
+            }
+            nextBtn.classList.remove('hidden');
+        }
+
+        function nextQuestion() {
+            if (currentStep < currentQuestions.length - 1) {
+                currentStep++;
+                loadQuestion(currentStep);
+            } else {
+                finishQuizForStudent();
+            }
+        }
+
+        function finishQuizForStudent() {
+            stopTimer();
+
+            // Save player result
+            const resultObj = {
+                studentId: currentStudent,
+                score: currentScore,
+                correctCount: currentCorrectCount,
+                timeInSec: timerSeconds,
+                timestamp: Date.now()
+            };
+
+            // Remove current student from available array
+            availableStudents = availableStudents.filter(id => id !== currentStudent);
+
+            // Add/Update Leaderboard
+            const existingIdx = leaderboard.findIndex(item => item.studentId === currentStudent);
+            if (existingIdx !== -1) {
+                leaderboard[existingIdx] = resultObj;
+            } else {
+                leaderboard.push(resultObj);
+            }
+
+            // Sort Leaderboard: Score DESC, Time ASC
+            leaderboard.sort((a, b) => b.score - a.score || a.timeInSec - b.timeInSec);
+
+            saveData();
+
+            // Render Result Screen
+            document.getElementById('res-student-id').innerText = currentStudent;
+            document.getElementById('res-score').innerText = currentScore;
+            document.getElementById('res-accuracy').innerText = `${currentCorrectCount}/5`;
+            
+            const mins = String(Math.floor(timerSeconds / 60)).padStart(2, '0');
+            const secs = String(timerSeconds % 60).padStart(2, '0');
+            document.getElementById('res-time').innerText = `${mins}:${secs}`;
+
+            let msg = '';
+            if (currentScore === 100) {
+                msg = '🌟 太棒了！完美表現，全面掌握初中不等式的核心觀念！';
+                confetti({ particleCount: 100, spread: 100, origin: { y: 0.5 } });
+            } else if (currentScore >= 60) {
+                msg = '👍 表現良好！建議重新複習答錯的題目解析（特別是乘除負數變號的觀念）。';
+            } else {
+                msg = '💪 再接再厲！建議重溫不等式的基礎移項法則與數線圖解定義喔。';
+            }
+            document.getElementById('res-feedback-msg').innerText = msg;
+
+            switchScreen('screen-result');
+        }
+
+        function continueNextPlayer() {
+            if (availableStudents.length === 0) {
+                alert('所有學號均已完成挑戰！將前往總排行榜。');
+                finishAndShowLeaderboard();
+                return;
+            }
+            currentStudent = null;
+            switchScreen('screen-draw');
+            updateDrawScreenUI();
+        }
+
+        function finishAndShowLeaderboard() {
+            showLeaderboardView();
+        }
+
+        // --- LEADERBOARD & UTILS --- //
+        function showLeaderboardView() {
+            renderLeaderboardTable();
+            switchScreen('screen-leaderboard');
+        }
+
+        function backToDrawOrSetup() {
+            if (availableStudents.length > 0 && currentStudent === null) {
+                switchScreen('screen-draw');
+                updateDrawScreenUI();
+            } else {
+                switchScreen('screen-setup');
+            }
+        }
+
+        function renderLeaderboardTable() {
+            const tbody = document.getElementById('leaderboard-tbody');
+            const emptyMsg = document.getElementById('leaderboard-empty');
+
+            if (leaderboard.length === 0) {
+                tbody.innerHTML = '';
+                emptyMsg.classList.remove('hidden');
+                return;
+            }
+
+            emptyMsg.classList.add('hidden');
+            tbody.innerHTML = leaderboard.map((item, idx) => {
+                const mins = String(Math.floor(item.timeInSec / 60)).padStart(2, '0');
+                const secs = String(item.timeInSec % 60).padStart(2, '0');
+                
+                let rankBadge = `<span class="font-bold text-slate-400">#${idx + 1}</span>`;
+                if (idx === 0) rankBadge = `<span class="w-6 h-6 rounded-full bg-amber-400 text-slate-950 font-black inline-flex items-center justify-center text-xs">1</span>`;
+                if (idx === 1) rankBadge = `<span class="w-6 h-6 rounded-full bg-slate-300 text-slate-950 font-black inline-flex items-center justify-center text-xs">2</span>`;
+                if (idx === 2) rankBadge = `<span class="w-6 h-6 rounded-full bg-amber-700 text-white font-black inline-flex items-center justify-center text-xs">3</span>`;
+
+                return `
+                    <tr class="hover:bg-slate-800/40 transition">
+                        <td class="py-3 px-4">${rankBadge}</td>
+                        <td class="py-3 px-4 font-bold text-indigo-300">學號 ${item.studentId}</td>
+                        <td class="py-3 px-4 font-black text-amber-400">${item.score} <span class="text-[10px] text-slate-500">分</span></td>
+                        <td class="py-3 px-4 text-slate-300">${item.correctCount} / 5</td>
+                        <td class="py-3 px-4 font-mono text-slate-400">${mins}:${secs}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function exportCSV() {
+            if (leaderboard.length === 0) {
+                alert('目前沒有成績數據可供匯出！');
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // UTF-8 BOM for Excel Chinese support
+            csvContent += "排名,學號,總得分,答對題數,總耗時(秒),完成時間\n";
+
+            leaderboard.forEach((item, idx) => {
+                const dateStr = new Date(item.timestamp).toLocaleString('zh-TW');
+                csvContent += `${idx + 1},${item.studentId}號,${item.score},${item.correctCount},${item.timeInSec},"${dateStr}"\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `不等式大挑戰_成績單_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function resetAllData() {
+            if (confirm("確定要重置所有班級成績排行榜嗎？此操作無法恢復。")) {
+                leaderboard = [];
+                saveData();
+                renderLeaderboardTable();
+                alert("已成功重置所有數據！");
+            }
+        }
+
+        function switchScreen(screenId) {
+            const screens = ['screen-setup', 'screen-draw', 'screen-quiz', 'screen-result', 'screen-leaderboard'];
+            screens.forEach(id => {
+                const el = document.getElementById(id);
+                if (id === screenId) {
+                    el.classList.remove('hidden');
+                } else {
+                    el.classList.add('hidden');
+                }
+            });
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+    </script>
+</body>
+</html>
